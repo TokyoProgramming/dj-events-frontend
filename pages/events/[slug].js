@@ -1,30 +1,60 @@
 import styles from "@/styles/Event.module.css";
 import Layout from "@/components/Layout";
 import { API_URL } from "@/config/index";
-import { FaPencilAlt, FaTimes } from "react-icons/fa";
+import { FaPenAlt, FaPencilAlt, FaTimes } from "react-icons/fa";
 import Link from "next/link";
 import Image from "next/image";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { useRouter } from "next/router";
 
 export default function EventPage({ evt }) {
-  const deleteEvent = (e) => {
-    console.log("delete");
+  console.log(evt);
+  const { attributes } = evt[0];
+  console.log(attributes);
+  const { image } = attributes;
+  const imageData = image.data.attributes;
+
+  const medium = imageData.formats.thumbnail.url;
+  const router = useRouter();
+
+  const deleteEvent = async (e) => {
+    if (confirm("Are you sure?")) {
+      const res = await fetch(`${API_URL}/api/events/${evt[0].id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.message);
+      } else {
+        router.push("/events");
+      }
+    }
   };
 
   console.log(evt[0]);
-  const { attributes } = evt[0];
-  const { image } = attributes;
-  const imageData = image.data.attributes;
-  const medium = imageData.formats.medium.url;
 
   return (
     <Layout>
       <div className={styles.event}>
+        <div className={styles.controls}>
+          <Link href={`/events/edit/${evt[0].id}`}>
+            <a href="">
+              <FaPencilAlt /> Edit Event
+            </a>
+          </Link>
+          <a className={styles.delete} onClick={deleteEvent}>
+            <FaTimes /> Delete Event
+          </a>
+        </div>
+
         <span>
           {new Date(attributes.date).toLocaleDateString("en-US")} at{" "}
           {attributes.time}
         </span>
         <h1>{attributes.name}</h1>
-        {/* <ToastContainer /> */}
+        <ToastContainer />
         {attributes.image && (
           <div className={styles.image}>
             <Image src={medium} width={960} height={600} />
@@ -77,8 +107,6 @@ export async function getServerSideProps({ query: { slug } }) {
   );
 
   const events = await res.json();
-
-  console.log(events.data);
 
   return {
     props: {
